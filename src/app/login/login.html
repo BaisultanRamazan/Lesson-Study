@@ -1,0 +1,107 @@
+<div class="main-container">
+  <div class="left-half-red"></div>
+  <div class="right-half-black"></div>
+
+  <div class="content-overlay">
+    
+    <div class="brand-header">
+      <h1 class="lesson-title">Lesson Study</h1>
+      <h1 class="portal-title">Portal</h1>
+    </div>
+
+    <div class="menu-container">
+      
+      @switch (currentScreen()) {
+        
+        @case ('menu') {
+          <div class="fade-in-content">
+            <h2 class="menu-title">MENU</h2>
+            <div class="tiles-grid">
+              <div class="tile"><div class="tile-overlay"><span class="tile-text">Раздел 1</span></div></div>
+              <div class="tile"><div class="tile-overlay"><span class="tile-text">Раздел 2</span></div></div>
+              <div class="tile"><div class="tile-overlay"><span class="tile-text">Раздел 3</span></div></div>
+              <div class="tile"><div class="tile-overlay"><span class="tile-text">Раздел 4</span></div></div>
+            </div>
+            <div class="auth-buttons">
+              <button class="btn btn-login" (click)="changeScreen('login')">Войти</button>
+              <button class="btn btn-register" (click)="changeScreen('register')">Регистрация</button>
+            </div>
+          </div>
+        }
+
+        @case ('login') {
+          <div class="slide-in-content">
+            <h2 class="menu-title">АВТОРИЗАЦИЯ</h2>
+            <form class="login-form" (submit)="onLoginSubmit($event)">
+              <div class="input-field">
+                <label for="username">Email:</label>
+                <input type="email" id="username" placeholder="example@mail.com" [value]="username()" (input)="username.set($any($event.target).value)" required />
+              </div>
+              <div class="input-field">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" placeholder="Введите пароль" [value]="password()" (input)="password.set($any($event.target).value)" required />
+              </div>
+
+              <div style="text-align: right; margin: -5px 0 15px 0;">
+                <span (click)="onForgotPassword()" style="cursor: pointer; color: #aaa; font-size: 13px; text-decoration: underline; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">
+                  Забыли пароль?
+                </span>
+              </div>
+
+              @if (errorMessage()) { <p class="error-message-text">{{ errorMessage() }}</p> }
+              @if (successMessage()) { <p class="success-message-text">{{ successMessage() }}</p> }
+              
+              <div class="auth-buttons form-actions">
+                <button type="submit" class="btn btn-login">Подтвердить</button>
+                <button type="button" class="btn btn-register" (click)="changeScreen('menu')">Назад</button>
+              </div>
+
+              <div style="margin-top: 15px; text-align: center;">
+                <button type="button" (click)="onGoogleLogin()" class="btn" style="width: 100%; display: flex; align-items: center; justify-content: center; background: white; color: #333; font-weight: 500;">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 16px; margin-right: 8px;">
+                  Войти через Google
+                </button>
+              </div>
+            </form>
+          </div>
+        }
+
+        @case ('register') {
+          <div class="slide-in-content">
+            <h2 class="menu-title">РЕГИСТРАЦИЯ</h2>
+            <form class="login-form" (submit)="onRegisterSubmit($event)">
+              <div class="input-field">
+                <label for="reg-username">Email:</label>
+                <input type="email" id="reg-username" placeholder="Ваш действующий Email" [value]="username()" (input)="username.set($any($event.target).value)" required />
+              </div>
+              <div class="input-field">
+                <label for="reg-password">Новый пароль:</label>
+                <input type="password" id="reg-password" placeholder="Придумайте пароль" [value]="password()" (input)="password.set($any($event.target).value)" required />
+              </div>
+              @if (errorMessage()) { <p class="error-message-text">{{ errorMessage() }}</p> }
+              @if (successMessage()) { <p class="success-message-text">{{ successMessage() }}</p> }
+              
+              <div class="auth-buttons form-actions">
+                <button type="submit" class="btn btn-login">Создать</button>
+                <button type="button" class="btn btn-register" (click)="changeScreen('menu')">Назад</button>
+              </div>
+
+              <div style="margin-top: 15px; text-align: center;">
+                <button type="button" (click)="onGoogleLogin()" class="btn" style="width: 100%; display: flex; align-items: center; justify-content: center; background: white; color: #333; font-weight: 500;">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 16px; margin-right: 8px;">
+                  Зарегистрироваться через Google
+                </button>
+              </div>
+            </form>
+          </div>
+        }
+      }
+
+    </div>
+
+    <div class="scientist-portrait">
+      <img src="/Sloane.png" alt="Scientist">
+    </div>
+
+  </div>
+</div>

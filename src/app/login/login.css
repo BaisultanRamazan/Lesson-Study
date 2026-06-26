@@ -1,0 +1,379 @@
+/* Общие сбросы и контейнер-обертка */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-family: sans-serif;
+}
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.main-container {
+  position: relative;
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Левая и правая части фона */
+.left-half-red {
+  flex: 55;
+  background-color: #ff5741;
+}
+
+.right-half-black {
+  flex: 45;
+  background-color: #000000;
+}
+
+/* Слой для контента поверх фонового разделения */
+.content-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none; /* Чтобы контейнер не перехватывал клики */
+}
+
+/* Все интерактивные элементы внутри overlay возвращают кликабельность */
+.brand-header, .menu-container, .scientist-portrait {
+  pointer-events: auto;
+}
+
+/* --- ЗАГОЛОВОК --- */
+.brand-header {
+  position: absolute;
+  top: 5%;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.lesson-title, .portal-title {
+  font-family: 'Arial Black', sans-serif;
+  font-size: clamp(2rem, 5vw, 5rem); /* Адаптивный размер шрифта в зависимости от экрана */
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: 3px;
+}
+
+/* Идеально стыкуем текст на границе 55% ширины экрана */
+.lesson-title {
+  width: 55%;
+  text-align: right;
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+.portal-title {
+  width: 45%;
+  text-align: left;
+  padding-left: 20px;
+  box-sizing: border-box;
+}
+
+/* --- МЕНЮ (КАРТОЧКА) --- */
+.menu-container {
+  position: absolute;
+  top: 53%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  width: 90%;
+  max-width: 500px; /* На десктопе будет 500px, на мобилках сожмется */
+  height: 550px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  padding: 30px;
+  box-sizing: border-box;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.menu-title {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: #000000;
+  margin: 0 0 20px 0;
+  letter-spacing: 2px;
+}
+
+/* Сетка плиток */
+.tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 15px;
+  width: 100%;
+  flex-grow: 1;
+}
+
+.tile {
+  background-color: #e0e0e0;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
+}
+
+.tile-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tile-text {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  transform: translateY(20px);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tile:hover { box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); }
+.tile:hover .tile-overlay { opacity: 1; }
+.tile:hover .tile-text { transform: translateY(0); }
+
+/* --- КНОПКИ АВТОРИЗАЦИИ --- */
+.auth-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 25px;
+}
+
+.btn {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 15px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.btn-login {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border: none;
+}
+.btn-login:hover {
+  background-color: #333333;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-register {
+  background-color: transparent;
+  color: #1a1a1a;
+  border: 2px solid #1a1a1a;
+}
+.btn-register:hover {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+/* --- ПОРТРЕТ УЧЕНОГО --- */
+.scientist-portrait {
+  position: absolute;
+  top: 50%;
+  right: 5%; /* Фиксированный отступ от правого края вместо огромных процентов */
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+.scientist-portrait img {
+  display: block;
+  width: 180px; /* Задаем адекватный базовый размер для десктопа */
+  height: auto;
+  border: 4px solid gold; /* Рамка картины */
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  transition: transform 0.3s ease;
+}
+
+.scientist-portrait:hover img {
+  transform: scale(1.05);
+}
+
+/* =======================================================
+   МЕДИА-ЗАПРОСЫ (АДАПТИВНОСТЬ ПОД МОБИЛЬНЫЕ И ПЛАНШЕТЫ)
+   ======================================================= */
+
+@media (max-width: 1024px) {
+  /* На планшетах прячем портрет или переносим его, чтобы не перекрывал меню */
+  .scientist-portrait {
+    display: none; 
+  }
+}
+
+@media (max-width: 768px) {
+  /* Переключаем фон на вертикальный (сверху красный, снизу черный) */
+  .main-container {
+    flex-direction: column;
+  }
+  .left-half-red { flex: 50; }
+  .right-half-black { flex: 50; }
+
+  /* Перестраиваем заголовок */
+  .brand-header {
+    flex-direction: column;
+    align-items: center;
+    top: 3%;
+  }
+  .lesson-title, .portal-title {
+    width: 100%;
+    text-align: center;
+    padding: 0;
+  }
+  .portal-title {
+    color: #ffffff; /* На черном фоне снизу будет отлично читаться */
+  }
+
+  /* Смещаем меню чуть ниже, чтобы освободить место для вертикального заголовка */
+  .menu-container {
+    top: 40%;
+    height: 480px;
+    padding: 20px;
+  }
+  .menu-title {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+}
+
+/* --- СТИЛИ ДЛЯ ФОРМЫ ВВОДА --- */
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+.input-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.input-field label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.input-field input {
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.input-field input:focus {
+  border-color: #1a1a1a;
+}
+
+.form-actions {
+  margin-top: 10px;
+}
+
+.error-message-text {
+  color: #ff5741;
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0 0 15px 0;
+  text-align: center;
+}
+
+/* Ключевые кадры для плавного появления меню */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Ключевые кадры для выплывания формы */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Применяем анимацию к контейнеру меню */
+.fade-in-content {
+  animation: fadeIn 0.35s ease-out forwards;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Применяем анимацию к контейнеру формы */
+.slide-in-content {
+  animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Сделаем так, чтобы сама карточка меню тоже мягко подстраивалась под высоту */
+.menu-container {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Эффект наведения на поля ввода, чтобы они подсвечивались стильной темной рамкой */
+.input-field input {
+  transition: all 0.2s ease;
+}
+.input-field input:focus {
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.1);
+}
+
+.success-message-text {
+  color: #2ec4b6;
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0 0 15px 0;
+  text-align: center;
+}

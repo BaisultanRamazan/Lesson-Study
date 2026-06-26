@@ -1,0 +1,10 @@
+/* Растягиваем саму страницу и кастомный тег приложения */
+html, body, app-root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  font-family: sans-serif;
+  display: block; /* Гарантируем корректное поведение app-root */
+}

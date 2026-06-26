@@ -1,0 +1,206 @@
+<style>
+  /* Растягиваем сам компонент Angular на всю доступную высоту и ширину */
+  :host {
+    display: block;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #ff4a3b;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Контейнер-обертка для центрирования */
+  .dashboard-container {
+    min-height: 100vh;
+    width: 100%;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  /* КНОПКА МЕНЮ — сделали её крупной, белой, с жирным оранжевым контуром */
+  .menu-burger-btn {
+    background: #ffffff !important;
+    border: 3px solid #ff6b5b !important;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    position: fixed;
+    left: 40px;
+    top: 40px;
+    z-index: 100;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s, background-color 0.2s;
+  }
+
+  .menu-burger-btn:hover {
+    transform: scale(1.08);
+    background: #fff4f2 !important;
+  }
+
+  /* Толстые оранжевые полоски внутри кнопки */
+  .menu-burger-btn span {
+    background: #ff6b5b !important;
+    width: 28px;
+    height: 4px;
+    border-radius: 2px;
+    display: block;
+  }
+
+  /* Главная белая карточка — теперь адаптивно сжимается и расширяется */
+  .main-card {
+    background: white;
+    width: 100%;
+    max-width: 900px;
+    border-radius: 24px;
+    padding: 50px 40px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+    box-sizing: border-box;
+  }
+
+  /* Списки исследований */
+  .research-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  /* Адаптивный сайдбар */
+  .sidebar-panel {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 360px;
+    height: 100vh;
+    background: #e0e0e0;
+    box-shadow: 10px 0 40px rgba(0,0,0,0.25);
+    padding: 40px 30px;
+    box-sizing: border-box;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+  }
+
+  /* НАСТРОЙКИ ДЛЯ ЭКРАНОВ СРЕДНЕГО И МАЛЕНЬКОГО РАЗМЕРА (Планшеты и ноутбуки) */
+  @media (max-width: 1100px) {
+    .menu-burger-btn {
+      position: absolute; /* На небольших экранах кнопка держится вверху потока */
+      left: 20px;
+      top: 20px;
+    }
+    .dashboard-container {
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 100px; /* Сдвигаем карточку вниз, чтобы кнопка не перекрывала текст */
+    }
+    .main-card {
+      width: 95%;
+      padding: 30px 20px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .sidebar-panel {
+      width: 100vw; /* Сайдбар на весь экран мобильного устройства */
+    }
+    .research-date-block {
+      width: 100%;
+      justify-content: flex-start;
+      padding-left: 40px;
+    }
+    .divider-pipe {
+      display: none; /* Убираем вертикальную черту на мобилках */
+    }
+  }
+</style>
+
+<div class="dashboard-container">
+  
+  <button class="menu-burger-btn" (click)="toggleSidebar()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <div class="main-card">
+    
+    <div style="text-align: center; margin-bottom: 35px;">
+      <h1 style="margin: 0; font-size: 32px; font-weight: 800; color: #000; letter-spacing: -0.5px;">Привет, User !</h1>
+      <p style="margin: 8px 0 0 0; color: #777; font-size: 16px; font-weight: 600;">С чего начнем ?</p>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 25px;">
+      <button style="background: #ff6b5b; border: none; width: 120px; height: 120px; border-radius: 50%; cursor: pointer; color: white; font-size: 70px; font-weight: 200; display: inline-flex; justify-content: center; align-items: center; line-height: 1; box-shadow: 0 8px 25px rgba(255,107,91,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+        +
+      </button>
+      <p style="margin: 12px 0 0 0; color: #999; font-weight: bold; font-size: 15px; letter-spacing: 0.3px;">Новое Исследование</p>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #eaeaea; margin: 40px 0;">
+
+    <div style="max-width: 100%; margin: 0 auto;">
+      <h3 style="color: #999; font-size: 16px; font-weight: bold; margin-bottom: 25px; letter-spacing: 0.5px;">Мои исследования</h3>
+      
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        @for (item of myResearches(); track item.title) {
+          <div class="research-item">
+            <div style="display: flex; align-items: center; gap: 15px;">
+              @if (item.fileType === 'doc') {
+                <div style="background: #00569d; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 800; font-size: 11px;">W</div>
+              } @else {
+                <div style="background: #d9381e; color: white; padding: 4px 6px; border-radius: 4px; font-weight: 800; font-size: 11px;">PDF</div>
+              }
+              <span style="color: #ff6b5b; text-decoration: underline; font-size: 16px; font-weight: 600; cursor: pointer;">{{ item.title }}</span>
+            </div>
+            
+            <div class="research-date-block" style="color: #bbb; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 20px;">
+              <span class="divider-pipe">|</span>
+              <span style="color: #999; font-family: monospace;">{{ item.updatedAt }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (isSidebarOpen()) {
+    <div class="sidebar-panel">
+      
+      <button (click)="toggleSidebar()" style="background: transparent; border: none; cursor: pointer; display: flex; gap: 4px; align-self: flex-end; margin-bottom: 20px; padding: 10px;">
+        <span style="background: #999; width: 5px; height: 24px; border-radius: 2px;"></span>
+        <span style="background: #999; width: 5px; height: 24px; border-radius: 2px;"></span>
+        <span style="background: #999; width: 5px; height: 24px; border-radius: 2px;"></span>
+      </button>
+
+      <div (click)="selectAgent('Research Coordinator')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Research Coordinator' ? '#ff6b5b' : '#000'">Research Coordinator</h2>
+      </div>
+
+      <div (click)="selectAgent('Academic Advisor')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Academic Advisor' ? '#ff6b5b' : '#000'">Academic Advisor</h2>
+      </div>
+
+      <div (click)="selectAgent('Document Redactor')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;">
+        <h2 style="margin: 0; font-size: 22px; font-weight: bold;" [style.color]="activeAgent() === 'Document Redactor' ? '#ff6b5b' : '#000'">Document Redactor</h2>
+      </div>
+
+      <div (click)="selectAgent('Forum')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Forum' ? '#ff6b5b' : '#000'">Forum</h2>
+      </div>
+    </div>
+  }
+</div>
