@@ -1,7 +1,6 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { initializeApp } from 'firebase/app';
-// Добавляем новые методы: sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
@@ -14,6 +13,18 @@ import {
   signInWithPopup 
 } from 'firebase/auth';
 
+// Импортируем компоненты базы данных Firestore
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  query, 
+  where,
+  doc,
+  updateDoc 
+} from 'firebase/firestore';
+
 const firebaseConfig = {
   apiKey: "AIzaSyBr-wqy0onSA0PKRVy99fIgWK_ztaFoX8Y",
   authDomain: "lesson-study-2998e.firebaseapp.com",
@@ -24,12 +35,24 @@ const firebaseConfig = {
   measurementId: "G-JQN4JZWDDZ"
 };
 
+interface Research {
+  id?: string;
+  title: string;
+  fileType: 'doc' | 'pdf';
+  updatedAt: string;
+  project?: string;
+  rawContent?: string;
+  userId?: string;
+  createdAtTimestamp?: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private firebaseApp = initializeApp(firebaseConfig);
   private firebaseAuth: Auth = getAuth(this.firebaseApp);
+  private db = getFirestore(this.firebaseApp);
   private router = inject(Router);
   
   isLoggedIn = signal<boolean>(false);
@@ -44,14 +67,90 @@ export class AuthService {
     });
   }
 
-  // 1. Функция "Забыли пароль"
+  /**
+   * СОХРАНЕНИЕ В ОБЛАКО FIRESTORE
+   */
+  async saveResearchToDb(research: Omit<Research, 'userId'>): Promise<Research> {
+    const currentUser = this.firebaseAuth.currentUser;
+    if (!currentUser) {
+      throw new Error('Пользователь не авторизован');
+    }
 
+    try {
+      const researchData = {
+        ...research,
+        userId: currentUser.uid, 
+        createdAtTimestamp: Date.now()
+      };
 
-  // 2. Вход через Google
+      const docRef = await addDoc(collection(this.db, 'researches'), researchData);
+      
+      return {
+        ...research,
+        id: docRef.id
+      };
+    } catch (error) {
+      console.error('Ошибка добавления документа в Firestore:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * ПОЛУЧЕНИЕ ДАННЫХ ИЗ ОБЛАКА С АВТО-СОРТИРОВКОЙ
+   */
+  async getResearches(): Promise<Research[]> {
+    const currentUser = this.firebaseAuth.currentUser;
+    if (!currentUser) return [];
+
+    try {
+      const q = query(
+        collection(this.db, 'researches'),
+        where('userId', '==', currentUser.uid)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const list: Research[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as any;
+        list.push({
+          id: doc.id,
+          title: data.title,
+          fileType: data.fileType,
+          updatedAt: data.updatedAt,
+          project: data.project,
+          rawContent: data.rawContent,
+          createdAtTimestamp: data.createdAtTimestamp
+        });
+      });
+
+      return list.sort((a, b) => (b.createdAtTimestamp || 0) - (a.createdAtTimestamp || 0));
+    } catch (error) {
+      console.error('Ошибка получения документов из Firestore:', error);
+      return [];
+    }
+  }
+
+  /**
+   * ОБНОВЛЕНИЕ ТЕКСТА И СТРУКТУРЫ ИССЛЕДОВАНИЯ В РЕАЛЬНОМ ВРЕМЕНИ
+   */
+  async updateResearchContent(id: string, newContent: string): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'researches', id);
+      await updateDoc(docRef, {
+        rawContent: newContent,
+        updatedAt: new Date().toLocaleDateString('ru-RU') + ' ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      });
+    } catch (error) {
+      console.error('Ошибка обновления документа в Firestore:', error);
+      throw error;
+    }
+  }
+
+  // Авторизационные методы
   async loginWithGoogle(): Promise<boolean> {
     try {
       const provider = new GoogleAuthProvider();
-      // Открывает стандартное безопасное окно Google для выбора аккаунта
       await signInWithPopup(this.firebaseAuth, provider);
       this.router.navigate(['/dashboard']);
       return true;
@@ -61,10 +160,8 @@ export class AuthService {
     }
   }
 
-  // ... твои старые методы login, register и logout остаются без изменений
-async login(email: string, password: string): Promise<boolean> {
+  async login(email: string, password: string): Promise<boolean> {
     try {
-      // Передаем email напрямую, как он есть
       await signInWithEmailAndPassword(this.firebaseAuth, email.trim().toLowerCase(), password);
       this.router.navigate(['/dashboard']);
       return true;
@@ -79,12 +176,9 @@ async login(email: string, password: string): Promise<boolean> {
       if (password.length < 6) {
         return { success: false, message: 'Пароль должен быть от 6 символов!' };
       }
-
-      // Передаем чистый email пользователя в базу
       await createUserWithEmailAndPassword(this.firebaseAuth, email.trim().toLowerCase(), password);
       return { success: true, message: 'Аккаунт успешно создан в облаке!' };
     } catch (error: any) {
-      console.error('Ошибка регистрации в облаке:', error);
       if (error.code === 'auth/email-already-in-use') {
         return { success: false, message: 'Этот Email уже зарегистрирован!' };
       }
@@ -100,7 +194,6 @@ async login(email: string, password: string): Promise<boolean> {
       await sendPasswordResetEmail(this.firebaseAuth, email.trim().toLowerCase());
       return { success: true, message: 'Ссылка для сброса пароля отправлена на ваш Email!' };
     } catch (error: any) {
-      console.error('Ошибка сброса пароля:', error);
       if (error.code === 'auth/user-not-found') {
         return { success: false, message: 'Пользователь с таким Email не найден.' };
       }

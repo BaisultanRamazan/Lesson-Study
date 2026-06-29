@@ -1,5 +1,4 @@
 <style>
-  /* Растягиваем сам компонент Angular на всю доступную высоту и ширину */
   :host {
     display: block;
     width: 100%;
@@ -10,7 +9,6 @@
     box-sizing: border-box;
   }
 
-  /* Контейнер-обертка для центрирования */
   .dashboard-container {
     min-height: 100vh;
     width: 100%;
@@ -23,7 +21,6 @@
     position: relative;
   }
 
-  /* КНОПКА МЕНЮ — сделали её крупной, белой, с жирным оранжевым контуром */
   .menu-burger-btn {
     background: #ffffff !important;
     border: 3px solid #ff6b5b !important;
@@ -49,7 +46,6 @@
     background: #fff4f2 !important;
   }
 
-  /* Толстые оранжевые полоски внутри кнопки */
   .menu-burger-btn span {
     background: #ff6b5b !important;
     width: 28px;
@@ -58,7 +54,6 @@
     display: block;
   }
 
-  /* Главная белая карточка — теперь адаптивно сжимается и расширяется */
   .main-card {
     background: white;
     width: 100%;
@@ -69,7 +64,6 @@
     box-sizing: border-box;
   }
 
-  /* Списки исследований */
   .research-item {
     display: flex;
     align-items: center;
@@ -78,7 +72,6 @@
     gap: 15px;
   }
 
-  /* Адаптивный сайдбар */
   .sidebar-panel {
     position: fixed;
     left: 0;
@@ -95,17 +88,94 @@
     gap: 25px;
   }
 
-  /* НАСТРОЙКИ ДЛЯ ЭКРАНОВ СРЕДНЕГО И МАЛЕНЬКОГО РАЗМЕРА (Планшеты и ноутбуки) */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 300;
+  }
+
+  .modal-window {
+    background: white;
+    width: 90%;
+    max-width: 460px;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+    position: relative;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #eaeaea;
+    border-radius: 10px;
+    font-size: 15px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-group input:focus {
+    border-color: #ff6b5b;
+  }
+
+  .btn-create {
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1;
+    transition: transform 0.1s;
+  }
+
+  .btn-create:active {
+    transform: scale(0.98);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
   @media (max-width: 1100px) {
     .menu-burger-btn {
-      position: absolute; /* На небольших экранах кнопка держится вверху потока */
+      position: absolute;
       left: 20px;
       top: 20px;
     }
     .dashboard-container {
       flex-direction: column;
       justify-content: flex-start;
-      padding-top: 100px; /* Сдвигаем карточку вниз, чтобы кнопка не перекрывала текст */
+      padding-top: 100px;
     }
     .main-card {
       width: 95%;
@@ -114,17 +184,9 @@
   }
 
   @media (max-width: 600px) {
-    .sidebar-panel {
-      width: 100vw; /* Сайдбар на весь экран мобильного устройства */
-    }
-    .research-date-block {
-      width: 100%;
-      justify-content: flex-start;
-      padding-left: 40px;
-    }
-    .divider-pipe {
-      display: none; /* Убираем вертикальную черту на мобилках */
-    }
+    .sidebar-panel { width: 100vw; }
+    .research-date-block { width: 100%; justify-content: flex-start; padding-left: 40px; }
+    .divider-pipe { display: none; }
   }
 </style>
 
@@ -144,7 +206,12 @@
     </div>
 
     <div style="text-align: center; margin-bottom: 25px;">
-      <button style="background: #ff6b5b; border: none; width: 120px; height: 120px; border-radius: 50%; cursor: pointer; color: white; font-size: 70px; font-weight: 200; display: inline-flex; justify-content: center; align-items: center; line-height: 1; box-shadow: 0 8px 25px rgba(255,107,91,0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+      <button 
+        (click)="openCreateModal()" 
+        style="background: #ff6b5b; border: none; width: 120px; height: 120px; border-radius: 50%; cursor: pointer; color: white; font-size: 70px; font-weight: 200; display: inline-flex; justify-content: center; align-items: center; line-height: 1; box-shadow: 0 8px 25px rgba(255,107,91,0.3); transition: transform 0.2s;" 
+        onmouseover="this.style.transform='scale(1.05)'" 
+        onmouseout="this.style.transform='scale(1)'"
+      >
         +
       </button>
       <p style="margin: 12px 0 0 0; color: #999; font-weight: bold; font-size: 15px; letter-spacing: 0.3px;">Новое Исследование</p>
@@ -164,7 +231,13 @@
               } @else {
                 <div style="background: #d9381e; color: white; padding: 4px 6px; border-radius: 4px; font-weight: 800; font-size: 11px;">PDF</div>
               }
-              <span style="color: #ff6b5b; text-decoration: underline; font-size: 16px; font-weight: 600; cursor: pointer;">{{ item.title }}</span>
+              
+              <span 
+  (click)="openInRedactor(item.id)" 
+  style="color: #ff6b5b; text-decoration: underline; font-size: 16px; font-weight: 600; cursor: pointer;"
+>
+  {{ item.title }}
+</span>
             </div>
             
             <div class="research-date-block" style="color: #bbb; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 20px;">
@@ -179,27 +252,39 @@
 
   @if (isSidebarOpen()) {
     <div class="sidebar-panel">
-      
       <button (click)="toggleSidebar()" style="background: transparent; border: none; cursor: pointer; display: flex; gap: 4px; align-self: flex-end; margin-bottom: 20px; padding: 10px;">
         <span style="background: #999; width: 5px; height: 24px; border-radius: 2px;"></span>
         <span style="background: #999; width: 5px; height: 24px; border-radius: 2px;"></span>
         <span style="background: #999; width: 5px; height: 24px; border-radius: 2px;"></span>
       </button>
+      <div (click)="selectAgent('Research Coordinator')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;"><h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Research Coordinator' ? '#ff6b5b' : '#000'">Research Coordinator</h2></div>
+      <div (click)="selectAgent('Academic Advisor')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;"><h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Academic Advisor' ? '#ff6b5b' : '#000'">Academic Advisor</h2></div>
+      <div (click)="selectAgent('Document Redactor')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;"><h2 style="margin: 0; font-size: 22px; font-weight: bold;" [style.color]="activeAgent() === 'Document Redactor' ? '#ff6b5b' : '#000'">Document Redactor</h2></div>
+      <div (click)="selectAgent('Forum')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;"><h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Forum' ? '#ff6b5b' : '#000'">Forum</h2></div>
+    </div>
+  }
 
-      <div (click)="selectAgent('Research Coordinator')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;">
-        <h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Research Coordinator' ? '#ff6b5b' : '#000'">Research Coordinator</h2>
-      </div>
+  @if (isModalOpen()) {
+    <div class="modal-overlay" (click)="closeCreateModal()">
+      <div class="modal-window" (click)="$event.stopPropagation()">
+        <h3 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 800; text-align: center; color: #111;">Создание исследования</h3>
+        
+        <div class="form-group">
+          <label>1) Название проекта</label>
+          <input type="text" placeholder="Введите название проекта..." [value]="projectRoute()" (input)="onInputUpdate($event, 'project')">
+        </div>
 
-      <div (click)="selectAgent('Academic Advisor')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;">
-        <h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Academic Advisor' ? '#ff6b5b' : '#000'">Academic Advisor</h2>
-      </div>
+        <div class="form-group">
+          <label>2) Наименование работы</label>
+          <input type="text" placeholder="Введите тему работы..." [value]="researchTitle()" (input)="onInputUpdate($event, 'research')">
+        </div>
 
-      <div (click)="selectAgent('Document Redactor')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;">
-        <h2 style="margin: 0; font-size: 22px; font-weight: bold;" [style.color]="activeAgent() === 'Document Redactor' ? '#ff6b5b' : '#000'">Document Redactor</h2>
-      </div>
+        <div style="display: flex; gap: 15px; margin-top: 25px;">
+          <button class="btn-create" style="background: #00569d;" (click)="createDocument('doc')">Создать Word</button>
+          <button class="btn-create" style="background: #d9381e;" (click)="createDocument('pdf')">Создать PDF</button>
+        </div>
 
-      <div (click)="selectAgent('Forum')" style="cursor: pointer; padding: 15px 0; border-bottom: 2px solid #ccc;">
-        <h2 style="margin: 0; font-size: 22px; font-weight: 800;" [style.color]="activeAgent() === 'Forum' ? '#ff6b5b' : '#000'">Forum</h2>
+        <button (click)="closeCreateModal()" style="background: transparent; border: none; color: #aaa; width: 100%; text-align: center; margin-top: 15px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: underline;">Отмена</button>
       </div>
     </div>
   }

@@ -1,0 +1,64 @@
+<div class="redactor-container">
+  <header class="redactor-header">
+    <button class="btn-back" (click)="goBack()">← Назад</button>
+    <div class="doc-info">
+      <span class="doc-badge">Редактор</span>
+      <h2>{{ researchTitle() }}</h2>
+    </div>
+    <div class="save-status">
+      <span *ngIf="isSaving()" class="saving-loader">Облако сохраняет...</span>
+      <span *ngIf="!isSaving()" class="saved-check">✓ Синхронизировано</span>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <section class="document-viewer">
+      <div 
+        class="a4-sheet" 
+        contenteditable="true"
+        [innerHTML]="documentContent()"
+        (input)="onContentChange($event)">
+      </div>
+    </section>
+
+    <aside class="ai-sidebar">
+      <div class="live-stats">
+        <h3>Аналитика документа</h3>
+        <div class="stats-grid">
+          <div class="stat-card"><strong>{{ stats().pages }}</strong><span>стр.</span></div>
+          <div class="stat-card"><strong>{{ stats().words }}</strong><span>слов</span></div>
+          <div class="stat-card"><strong>{{ stats().chars }}</strong><span>знаков</span></div>
+        </div>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="agent-avatar">AI</div>
+          <div>
+            <h4>Методологический Агент</h4>
+            <span class="status-online">онлайн</span>
+          </div>
+        </div>
+
+        <div class="chat-messages">
+          <div *ngFor="let msg of messages()" [ngClass]="['msg-row', msg.sender === 'user' ? 'user-row' : 'ai-row']">
+            <div class="msg-bubble">
+              <p style="white-space: pre-line; margin: 0;">{{ msg.text }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-footer">
+          <input 
+            type="text" 
+            placeholder="Запросить статистику, диаграмму..." 
+            [ngModel]="chatInput()"
+            (ngModelChange)="chatInput.set($event)"
+            (keyup.enter)="sendAiMessage()"
+          />
+          <button (click)="sendAiMessage()">Отправить</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>

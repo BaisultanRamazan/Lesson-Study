@@ -1,9 +1,9 @@
 import { Routes } from '@angular/router';
-import { Login } from './login/login'; // Твой компонент логина
-import { DashboardComponent } from './dashboard/dashboard'; // Указываем путь к твоему файлу dashboard.ts
+import { DashboardComponent } from './dashboard/dashboard'; // Проверь путь
+import { DocumentRedactorComponent } from './document-redactor/document-redactor'; // Импортируем наш файл
 
 export const routes: Routes = [
-  { path: 'login', component: Login },
   { path: 'dashboard', component: DashboardComponent },
-  { path: '', redirectTo: 'login', pathMatch: 'full' }
+  { path: 'redactor/:id', component: DocumentRedactorComponent }, // Маршрут для открытия конкретного документа
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
 ];
