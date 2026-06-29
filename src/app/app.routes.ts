@@ -5,5 +5,5 @@ import { DocumentRedactorComponent } from './document-redactor/document-redactor
 export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent },
   { path: 'redactor/:id', component: DocumentRedactorComponent }, // Маршрут для открытия конкретного документа
-  { path: '', redirectTo: '/login', pathMatch: 'full' }
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' }
 ];
