@@ -107,7 +107,13 @@ export class DocumentRedactorComponent implements OnInit {
         } else if (!rawContent || rawContent === '<p><br></p>' || rawContent === '<div><br></div>') {
           pages = ['<p><br></p>'];
         } else if (rawContent.includes('')) {
-          pages = rawContent.split('').map(p => p.trim()).filter(p => p.length > 0);
+          // ИСПРАВЛЕНИЕ: Жестко вычищаем пустые страницы, которые могли нагенерироваться раньше
+          pages = rawContent
+            .split('')
+            .map(p => p.trim())
+            .filter(p => p.length > 0 && p !== '<p><br></p>' && p !== '<div><br></div>');
+          
+          // Если все страницы отфильтровались как пустые, оставляем строго ОДНУ
           if (pages.length === 0) pages = ['<p><br></p>'];
         } else {
           pages = [rawContent];
@@ -164,14 +170,26 @@ export class DocumentRedactorComponent implements OnInit {
   }
 
   async saveDocument() {
-    if (this.isDocumentLoading) {
-      return; 
-    }
+    if (this.isDocumentLoading) return; 
     if (!this.researchId()) return;
+    
     this.isSaving.set(true);
     try {
-      // ИСПРАВЛЕНО: Склеиваем страницы строго через маркер перед отправкой в Firebase
-      const fullContent = this.documentPages().join('');
+      // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перед склейкой убираем из массива страниц фантомные пустые строки
+      // Оставляем только те страницы, где есть хоть какой-то текст или теги
+      const cleanPages = this.documentPages()
+        .map(p => p.trim())
+        .filter(p => p !== '' && p !== '<p><br></p>' && p !== '<div><br></div>');
+
+      // Если после чистки вообще ничего не осталось, принудительно делаем одну чистую страницу
+      const finalPages = cleanPages.length > 0 ? cleanPages : ['<p><br></p>'];
+
+      // Обновляем локальный сигнал отфильтрованными данными, чтобы интерфейс не прыгал
+      this.documentPages.set(finalPages);
+
+      // Склеиваем чистые страницы
+      const fullContent = finalPages.join('');
+      
       await this.authService.updateResearchContent(this.researchId()!, fullContent);
       this.isSaving.set(false);
     } catch (error) {
