@@ -408,10 +408,44 @@
 }
 
 /* ==========================================================================
-   5. АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (МЕНЬШЕ 768px)
+   5. НАСТРОЙКИ ЭЛЕМЕНТОВ ДЛЯ ПК (ПО УМОЛЧАНИЮ СКРЫТЫ)
+   ========================================================================== */
+.mobile-ai-trigger, 
+.mobile-sidebar-header {
+  display: none; /* На больших экранах эти элементы не нужны */
+}
+
+/* ==========================================================================
+   6. АДАПТИВНОСТЬ С МОБИЛЬНОЙ ШТОРКОЙ (МЕНЬШЕ 768px)
    ========================================================================== */
 @media (max-width: 768px) {
-  /* Перестраиваем хедер: уменьшаем отступы и размеры текста */
+  
+  /* ПЛАВАЮЩАЯ КНОПКА «Помощник ИИ» в углу экрана */
+  .mobile-ai-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: #ff4a3b;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 14px 22px;
+    font-weight: bold;
+    font-size: 15px;
+    box-shadow: 0 6px 20px rgba(255, 74, 59, 0.4);
+    z-index: 999; /* Поверх листа А4 */
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  .mobile-ai-trigger:active {
+    transform: scale(0.95);
+  }
+
+  /* ХЕДЕР РЕДАКТОРА */
   .redactor-header {
     padding: 10px 15px;
     height: auto;
@@ -423,75 +457,150 @@
     font-size: 15px;
   }
 
-  /* ТУЛБАР: Делаем его горизонтально прокручиваемым, чтобы кнопки не сжимались */
+  /* ТУЛБАР: Горизонтальный скролл без деформации кнопок */
   .editor-toolbar {
     padding: 6px 15px;
     overflow-x: auto;
     white-space: nowrap;
     display: flex;
     justify-content: flex-start;
-    -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    -webkit-overflow-scrolling: touch;
   }
   
   .editor-toolbar button {
-    flex: 0 0 auto; /* Запрещаем кнопкам уменьшаться */
+    flex: 0 0 auto;
     padding: 6px 10px;
   }
 
-  /* РАБОЧАЯ ОБЛАСТЬ: Меняем flex-direction на столбец */
+  /* РАБОЧАЯ ОБЛАСТЬ: Лист А4 теперь занимает весь экран */
   .workspace {
-    flex-direction: column;
-    overflow-y: auto; /* Позволяем всему экрану прокручиваться вниз */
+    position: relative;
+    display: block;
+    overflow-y: auto;
+    height: calc(100vh - 110px);
   }
 
   /* ЗОНА ПРОСМОТРА ДОКУМЕНТА */
   .document-viewer {
-    width: 100%;
+    width: 100% !important;
     padding: 15px 10px;
     box-sizing: border-box;
-    overflow-y: visible; /* Отключаем отдельный скролл зоны, скроллится весь workspace */
   }
 
-  /* ЛИСТ А4: Сбрасываем жесткую ширину в мм, делаем его на весь экран смартфона */
+  /* ЛИСТ А4 */
   .a4-sheet {
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
-    height: auto !important; /* На телефоне разрешаем листу расти вниз, чтобы удобно читать */
+    height: auto !important;
     max-height: none !important;
-    padding: 20px 15px !important; /* Уменьшаем гигантские поля А4 до мобильных отступов */
+    padding: 20px 15px !important;
     font-size: 14px;
-    margin-bottom: 20px;
+    box-shadow: none; /* Убираем тяжелые тени на мобилке */
+    border-radius: 0;
   }
 
-  /* БОКОВАЯ ПАНЕЛЬ С ЧАТОМ: Уходит вниз под документ */
+  /* ТРАНСФОРМАЦИЯ БОКОВОЙ ПАНЕЛИ В ВЫЕЗЖАЮЩУЮ ШТОРКУ */
   .ai-sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
     width: 100% !important;
+    height: 80vh !important; /* Открывается снизу на 80% экрана */
+    background: #ffffff;
+    z-index: 1000;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.15);
     border-left: none;
-    border-top: 1px solid #e1e4e8;
-    height: auto !important;
+    
+    /* Изначально прячем шторку, сдвигая её полностью вниз */
+    transform: translateY(100%);
+    transition: transform 0.3s ease-in-out; 
     display: flex;
     flex-direction: column;
   }
 
-  /* Ограничиваем окно чата по высоте на мобилках, чтобы оно не было бесконечным */
+  /* Класс, который вешает Angular при открытии меню */
+  .ai-sidebar.mobile-open {
+    transform: translateY(0);
+  }
+
+  /* ВКЛЮЧАЕМ ОТОБРАЖЕНИЕ ШАПКИ ШТОРКИ */
+  .mobile-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #f0f2f5;
+    background: #fafbfe;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+  }
+
+  .mobile-header-title h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  /* Контейнер кнопок Word/PDF и крестика */
+  .mobile-export-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-export-buttons button {
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .close-sidebar-btn {
+    background: none !important;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 0 5px;
+    margin-left: 5px;
+  }
+
+  /* Скрываем нижний десктопный подвал с кнопками в чате, так как они теперь вверху */
+  .desktop-export-footer {
+    display: none !important;
+  }
+
+  /* Корректируем чат, чтобы он растягивался по высоте внутри шторки */
   .chat-container {
-    height: 450px; 
+    flex: 1;
+    height: auto !important;
   }
 
   .chat-messages {
-    max-height: 300px;
+    flex: 1;
+    max-height: none !important; /* Убираем жесткое ограничение в 300px */
   }
-  
+
   .live-stats {
-    padding: 15px;
+    padding: 12px 20px;
   }
-  
-  .stats-grid {
-    gap: 6px;
-  }
-  
-  .stat-card strong {
-    font-size: 15px;
+
+  /* ТЕМНЫЙ ЗАДНИЙ ФОН (OVERLAY) */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.4); /* Полупрозрачный темный slate цвет */
+    backdrop-filter: blur(2px); /* Легкое размытие А4 документа на фоне */
+    z-index: 998;
   }
 }

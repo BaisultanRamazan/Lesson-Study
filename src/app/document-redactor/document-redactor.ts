@@ -34,12 +34,20 @@ export class DocumentRedactorComponent implements OnInit {
   researchId = signal<string | null>(null);
   researchTitle = signal<string>('Загрузка документа...');
   
-  // КРИТИЧЕСКОЕ ОБНОВЛЕНИЕ: Храним контент постранично в виде массива строк HTML
+  // Храним контент постранично в виде массива строк HTML
   documentPages = signal<string[]>(['']); 
   currentPageIndex = signal<number>(0); // Индекс текущей активной страницы (с 0)
 
   isSaving = signal<boolean>(false);
   isAiThinking = signal<boolean>(false); 
+  isDocumentLoading = false;
+
+  // ДОБАВЛЕНО: Сигнал и метод управления шторкой для мобильных устройств
+  isMobileAiOpen = signal<boolean>(false);
+
+  toggleMobileAi() {
+    this.isMobileAiOpen.set(!this.isMobileAiOpen());
+  }
 
   chatInput = signal<string>('');
   messages = signal<Message[]>([
@@ -47,13 +55,13 @@ export class DocumentRedactorComponent implements OnInit {
   ]);
 
   // Генерируем общий контент для аналитики и экспорта (склеиваем все страницы)
-  documentContent = computed(() => this.documentPages().join(' '));
+  documentContent = computed(() => this.documentPages().join(''));
 
   stats = computed(() => {
     const text = this.stripHtml(this.documentContent());
     const charCount = text.length;
     const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-    const pageCount = this.documentPages().length; // Количество страниц теперь рассчитывается точно
+    const pageCount = this.documentPages().length; 
 
     return { pages: pageCount, words: wordCount, chars: charCount };
   });
@@ -68,8 +76,6 @@ export class DocumentRedactorComponent implements OnInit {
     this.researchId.set(id);
     await this.loadDocument();
   }
-
-  isDocumentLoading = false;
 
   async loadDocument() {
     try {
@@ -91,13 +97,10 @@ export class DocumentRedactorComponent implements OnInit {
 
         let pages: string[] = [];
 
-        // ИСПРАВЛЕНИЕ: Если это чистый HTML-шаблон Word (только что созданный документ),
-        // извлекаем из него текст внутри <body> или создаем первую чистую страницу
+        // Извлекаем чистый текст, если это шаблон разметки от старого экспорта
         if (rawContent.includes('<html') || rawContent.includes('xmlns:w=')) {
-          // Пытаемся вытащить содержимое body шаблона, если оно там есть
           const bodyMatch = rawContent.match(/<body>([\s\S]*?)<\/body>/i);
           if (bodyMatch && bodyMatch[1].trim()) {
-            // Очищаем от лишних оберток таблиц или блоков проекта, если нужно, или берем как есть
             pages = [bodyMatch[1].trim()];
           } else {
             pages = ['<p>Начните вводить текст здесь...</p>'];
@@ -105,6 +108,7 @@ export class DocumentRedactorComponent implements OnInit {
         } else if (!rawContent || rawContent === '<p><br></p>' || rawContent === '<div><br></div>') {
           pages = ['<p><br></p>'];
         } else if (rawContent.includes('')) {
+          // ИСПРАВЛЕНО: Вернули маркер на место
           pages = rawContent.split('').map(p => p.trim()).filter(p => p.length > 0);
           if (pages.length === 0) pages = ['<p><br></p>'];
         } else {
@@ -119,7 +123,6 @@ export class DocumentRedactorComponent implements OnInit {
           if (this.subSheet) {
             this.subSheet.nativeElement.innerHTML = pages[0] || '<p><br></p>';
           }
-          // Снимаем блокировку сохранения ПОСЛЕ того, как данные полностью отобразились в редакторе
           this.isDocumentLoading = false; 
         }, 50);
 
@@ -139,7 +142,6 @@ export class DocumentRedactorComponent implements OnInit {
   onContentChange(event: Event) {
     const html = (event.target as HTMLElement).innerHTML;
     
-    // Обновляем только текущую редактируемую страницу в массиве сигналов
     const pages = [...this.documentPages()];
     pages[this.currentPageIndex()] = html;
     this.documentPages.set(pages);
@@ -148,7 +150,6 @@ export class DocumentRedactorComponent implements OnInit {
       clearTimeout(this.saveTimeout);
     }
 
-    // Дебаунс на сохранение в Firestore
     this.saveTimeout = setTimeout(() => {
       this.saveDocument();
     }, 1500);
@@ -161,7 +162,7 @@ export class DocumentRedactorComponent implements OnInit {
     if (!this.researchId()) return;
     this.isSaving.set(true);
     try {
-      // Склеиваем страницы специальным маркером перед отправкой в Firebase
+      // ИСПРАВЛЕНО: Склеиваем страницы строго через маркер перед отправкой в Firebase
       const fullContent = this.documentPages().join('');
       await this.authService.updateResearchContent(this.researchId()!, fullContent);
       this.isSaving.set(false);
@@ -188,17 +189,14 @@ export class DocumentRedactorComponent implements OnInit {
   goToPage(index: number) {
     if (index < 0 || index >= this.documentPages().length) return;
 
-    // 1. Фиксируем контент уходящей страницы
     if (this.subSheet) {
       const pages = [...this.documentPages()];
       pages[this.currentPageIndex()] = this.subSheet.nativeElement.innerHTML;
       this.documentPages.set(pages);
     }
 
-    // 2. Меняем индекс текущей страницы
     this.currentPageIndex.set(index);
 
-    // 3. Подставляем в редактор HTML новой выбранной страницы
     if (this.subSheet) {
       this.subSheet.nativeElement.innerHTML = this.documentPages()[index] || '<p><br></p>';
     }
@@ -208,11 +206,9 @@ export class DocumentRedactorComponent implements OnInit {
     const pages = [...this.documentPages()];
     const nextIndex = this.currentPageIndex() + 1;
     
-    // Добавляем чистый шаблон страницы (параграф с переносом)
     pages.splice(nextIndex, 0, '<p><br></p>');
     this.documentPages.set(pages);
     
-    // Сразу переносим пользователя на новую страницу
     this.goToPage(nextIndex);
     this.saveDocument();
   }
@@ -228,7 +224,6 @@ export class DocumentRedactorComponent implements OnInit {
       pages.splice(this.currentPageIndex(), 1);
       this.documentPages.set(pages);
 
-      // Рассчитываем безопасный индекс возврата
       const newIndex = Math.max(0, this.currentPageIndex() - 1);
       this.currentPageIndex.set(newIndex);
 
@@ -238,7 +233,6 @@ export class DocumentRedactorComponent implements OnInit {
       this.saveDocument();
     }
   }
-  // --------------------------------------------------
 
   async sendAiMessage() {
     const prompt = this.chatInput().trim();
@@ -253,7 +247,7 @@ export class DocumentRedactorComponent implements OnInit {
         action: 'chat_and_edit',
         researchId: this.researchId(),
         documentTitle: this.researchTitle(),
-        currentContent: this.documentPages()[this.currentPageIndex()], // Отправляем ИИ контент ТЕКУЩЕЙ страницы
+        currentContent: this.documentPages()[this.currentPageIndex()], 
         userPrompt: prompt,
         stats: this.stats()
       };
@@ -275,8 +269,7 @@ export class DocumentRedactorComponent implements OnInit {
         parsedData = dataToProcess;
       }
 
-      // Обновляем текущую страницу ответом ИИ (с поддержкой графиков)
-     if (parsedData && parsedData.updatedHtmlContent) {
+      if (parsedData && parsedData.updatedHtmlContent) {
         const pages = [...this.documentPages()];
         pages[this.currentPageIndex()] = parsedData.updatedHtmlContent;
         this.documentPages.set(pages);
@@ -323,16 +316,14 @@ export class DocumentRedactorComponent implements OnInit {
       const blob = new Blob([blobContent], { type: 'application/msword' });
       this.triggerDownload(blob, `${titleText}.doc`);
     } else {
-let currentHtml = this.documentContent();
+      let currentHtml = this.documentContent();
 
-      // Жестко раскодируем амперсанды, если они случайно проскочили перед генерацией PDF
       if (currentHtml.includes('&lt;') || currentHtml.includes('&gt;')) {
         const tempTextArea = document.createElement('textarea');
         tempTextArea.innerHTML = currentHtml;
         currentHtml = tempTextArea.value;
       }
 
-      // Оборачиваем в печатный PDF-шаблон
       const finalHtml = this.wrapInPdfTemplate(titleText, currentHtml);
       
       const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
@@ -384,7 +375,6 @@ let currentHtml = this.documentContent();
             line-height: 1.6; 
             background: white;
           }
-          /* Стили для таблиц, если ИИ их добавит, чтобы они не ломались в PDF */
           table { border-collapse: collapse; width: 100%; margin: 15px 0; }
           th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
           th { background-color: #f8fafc; }
@@ -397,7 +387,6 @@ let currentHtml = this.documentContent();
         ${content}
         <script>
           window.onload = function() { 
-            // Небольшая задержка, чтобы стили успели примениться перед открытием окна печати
             setTimeout(() => { window.print(); }, 300); 
           }
         </script>

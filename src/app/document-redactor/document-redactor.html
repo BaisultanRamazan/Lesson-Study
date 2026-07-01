@@ -1,4 +1,9 @@
 <div class="redactor-container">
+  
+  <button class="mobile-ai-trigger" (click)="toggleMobileAi()">
+    💬 Помощник ИИ
+  </button>
+
   <header class="redactor-header">
     <button class="btn-back" (click)="goBack()">← Назад</button>
     <div class="doc-info">
@@ -30,35 +35,46 @@
   <div class="workspace">
     
     <section class="document-viewer">
-    <div class="page-indicator">
-      Страница {{ currentPageIndex() + 1 }} из {{ documentPages().length }}
-    </div>
-
-    <div 
-      #subSheet
-      class="a4-sheet" 
-      contenteditable="true" 
-      (input)="onContentChange($event)">
-    </div>
-
-    <div class="page-navigator">
-      <button [disabled]="currentPageIndex() === 0" (click)="goToPage(currentPageIndex() - 1)">◀ Назад</button>
-      
-      <div class="page-scroll-list">
-        <span 
-          *ngFor="let page of documentPages(); let i = index" 
-          [class.active-page-dot]="i === currentPageIndex()"
-          (click)="goToPage(i)">
-          {{ i + 1 }}
-        </span>
+      <div class="page-indicator">
+        Страница {{ currentPageIndex() + 1 }} из {{ documentPages().length }}
       </div>
 
-      <button [disabled]="currentPageIndex() === documentPages().length - 1" (click)="goToPage(currentPageIndex() + 1)">Вперед ▶</button>
-    </div>
-  </section>
+      <div 
+        #subSheet
+        class="a4-sheet" 
+        contenteditable="true" 
+        (input)="onContentChange($event)">
+      </div>
 
-    <aside class="ai-sidebar">
+      <div class="page-navigator">
+        <button [disabled]="currentPageIndex() === 0" (click)="goToPage(currentPageIndex() - 1)">◀ Назад</button>
+        
+        <div class="page-scroll-list">
+          <span 
+            *ngFor="let page of documentPages(); let i = index" 
+            [class.active-page-dot]="i === currentPageIndex()"
+            (click)="goToPage(i)">
+            {{ i + 1 }}
+          </span>
+        </div>
+
+        <button [disabled]="currentPageIndex() === documentPages().length - 1" (click)="goToPage(currentPageIndex() + 1)">Вперед ▶</button>
+      </div>
+    </section>
+
+    <aside class="ai-sidebar" [class.mobile-open]="isMobileAiOpen()">
       
+      <div class="mobile-sidebar-header">
+        <div class="mobile-header-title">
+          <h4>Панель ИИ и Экспорт</h4>
+        </div>
+        <div class="mobile-export-buttons">
+          <button (click)="downloadFile('doc')" style="background: #00569d;">Word</button>
+          <button (click)="downloadFile('pdf')" style="background: #d9381e;">PDF</button>
+          <button class="close-sidebar-btn" (click)="toggleMobileAi()">✕</button>
+        </div>
+      </div>
+
       <div class="live-stats">
         <h3>Аналитика документа</h3>
         <div class="stats-grid">
@@ -96,7 +112,7 @@
           <button (click)="sendAiMessage()">Отправить</button>
         </div>
 
-        <div style="padding: 0 15px 15px 15px; display: flex; gap: 8px; background: white;">
+        <div class="desktop-export-footer" style="padding: 0 15px 15px 15px; display: flex; gap: 8px; background: white;">
           <button (click)="downloadFile('doc')" style="flex: 1; background: #00569d; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;">
             Скачать Word
           </button>
@@ -110,3 +126,5 @@
 
   </div>
 </div>
+
+<div *ngIf="isMobileAiOpen()" class="sidebar-overlay" (click)="toggleMobileAi()"></div>
