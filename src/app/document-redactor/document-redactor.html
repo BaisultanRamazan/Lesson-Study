@@ -11,17 +11,54 @@
     </div>
   </header>
 
+  <div class="editor-toolbar">
+    <button (click)="format('bold')" title="Жирный"><b>B</b></button>
+    <button (click)="format('italic')" title="Курсив"><i>I</i></button>
+    <button (click)="format('underline')" title="Подчеркнутый"><u>U</u></button>
+    <div class="separator"></div>
+    <button (click)="format('formatBlock', 'h1')">H1</button>
+    <button (click)="format('formatBlock', 'h2')">H2</button>
+    <button (click)="format('formatBlock', 'p')">Текст</button>
+    <div class="separator"></div>
+    <button (click)="format('insertUnorderedList')" title="Маркированный список">• Список</button>
+    <button (click)="format('insertOrderedList')" title="Нумерованный список">1. Список</button>
+    <div class="separator"></div>
+    <button (click)="addPage()" title="Добавить страницу" style="color: #10b981;">➕ Стр.</button>
+    <button (click)="removePage()" title="Удалить текущую страницу" style="color: #d9381e;">❌ Стр.</button>
+  </div>
+
   <div class="workspace">
+    
     <section class="document-viewer">
-      <div 
-        class="a4-sheet" 
-        contenteditable="true"
-        [innerHTML]="documentContent()"
-        (input)="onContentChange($event)">
+    <div class="page-indicator">
+      Страница {{ currentPageIndex() + 1 }} из {{ documentPages().length }}
+    </div>
+
+    <div 
+      #subSheet
+      class="a4-sheet" 
+      contenteditable="true" 
+      (input)="onContentChange($event)">
+    </div>
+
+    <div class="page-navigator">
+      <button [disabled]="currentPageIndex() === 0" (click)="goToPage(currentPageIndex() - 1)">◀ Назад</button>
+      
+      <div class="page-scroll-list">
+        <span 
+          *ngFor="let page of documentPages(); let i = index" 
+          [class.active-page-dot]="i === currentPageIndex()"
+          (click)="goToPage(i)">
+          {{ i + 1 }}
+        </span>
       </div>
-    </section>
+
+      <button [disabled]="currentPageIndex() === documentPages().length - 1" (click)="goToPage(currentPageIndex() + 1)">Вперед ▶</button>
+    </div>
+  </section>
 
     <aside class="ai-sidebar">
+      
       <div class="live-stats">
         <h3>Аналитика документа</h3>
         <div class="stats-grid">
@@ -58,7 +95,18 @@
           />
           <button (click)="sendAiMessage()">Отправить</button>
         </div>
+
+        <div style="padding: 0 15px 15px 15px; display: flex; gap: 8px; background: white;">
+          <button (click)="downloadFile('doc')" style="flex: 1; background: #00569d; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;">
+            Скачать Word
+          </button>
+          <button (click)="downloadFile('pdf')" style="flex: 1; background: #d9381e; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;">
+            Скачать PDF
+          </button>
+        </div>
+
       </div>
     </aside>
+
   </div>
 </div>

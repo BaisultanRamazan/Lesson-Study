@@ -13,7 +13,7 @@ import {
   signInWithPopup 
 } from 'firebase/auth';
 
-// Импортируем компоненты базы данных Firestore
+// КРИТИЧЕСКОЕ ОБНОВЛЕНИЕ: Добавили deleteDoc в импорты
 import { 
   getFirestore, 
   collection, 
@@ -22,7 +22,8 @@ import {
   query, 
   where,
   doc,
-  updateDoc 
+  updateDoc,
+  deleteDoc 
 } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -52,7 +53,7 @@ interface Research {
 export class AuthService {
   private firebaseApp = initializeApp(firebaseConfig);
   private firebaseAuth: Auth = getAuth(this.firebaseApp);
-  private db = getFirestore(this.firebaseApp);
+  private db = getFirestore(this.firebaseApp); // Используем инстанс 'this.db'
   private router = inject(Router);
   
   isLoggedIn = signal<boolean>(false);
@@ -143,6 +144,19 @@ export class AuthService {
       });
     } catch (error) {
       console.error('Ошибка обновления документа в Firestore:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * ДОБАВЛЕННЫЙ МЕТОД: Безвозвратное удаление исследования из Firestore
+   */
+  async deleteResearch(id: string): Promise<void> {
+    try {
+      const docRef = doc(this.db, 'researches', id);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error('Ошибка удаления документа из Firestore:', error);
       throw error;
     }
   }

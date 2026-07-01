@@ -1,4 +1,4 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../auth'; 
 import { Router } from '@angular/router';
@@ -32,18 +32,17 @@ export class DashboardComponent implements OnInit {
   researchTitle = signal<string>(''); 
 
   myResearches = signal<Research[]>([]);
+  
+  // ДОБАВЛЕНО: Сигнал для хранения ID исследования, у которого сейчас открыто меню
+  activeMenuId = signal<string | null>(null);
 
   ngOnInit() {
-    // Получаем инстанс auth для отслеживания загрузки профиля
     const auth = getAuth();
     
-    // Ждем, пока Firebase железно подтвердит восстановление сессии из облака
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Пользователь успешно распознан облаком, загружаем его личные файлы
         await this.loadUserResearches();
       } else {
-        // Если сессии нет — отправляем на логин
         this.router.navigate(['/login']);
       }
     });
@@ -58,6 +57,44 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  // ДОБАВЛЕНО: Метод переключения троеточия (открыть/закрыть)
+  toggleMenu(event: Event, id: string | undefined) {
+    if (!id) return;
+    event.stopPropagation(); // Останавливаем всплытие клика, чтобы не переходить в редактор
+    
+    if (this.activeMenuId() === id) {
+      this.activeMenuId.set(null);
+    } else {
+      this.activeMenuId.set(id);
+    }
+  }
+
+  // ДОБАВЛЕНО: Метод для удаления исследования из облака и локального апдейта интерфейса
+  async deleteDocument(event: Event, id: string | undefined) {
+    if (!id) return;
+    event.stopPropagation(); // Защита от открытия документа при клике по кнопке удаления
+
+    if (confirm('Вы уверены, что хотите безвозвратно удалить это исследование?')) {
+      try {
+        // Вызываем метод удаления в твоём AuthService
+        await this.authService.deleteResearch(id);
+        
+        // Удаляем из локального массива, чтобы список обновился на экране мгновенно
+        this.myResearches.set(this.myResearches().filter(item => item.id !== id));
+        this.activeMenuId.set(null);
+      } catch (error) {
+        console.error('Ошибка при удалении исследования:', error);
+        alert('Не удалось удалить документ. Попробуйте еще раз.');
+      }
+    }
+  }
+
+  // ДОБАВЛЕНО: Автоматически закрываем открытые меню при клике в любое место дашборда
+  @HostListener('document:click')
+  closeDropdownMenu() {
+    this.activeMenuId.set(null);
+  }
+
   toggleSidebar() { this.isSidebarOpen.set(!this.isSidebarOpen()); }
   selectAgent(agentName: string) { this.activeAgent.set(agentName); }
   openCreateModal() { this.projectRoute.set(''); this.researchTitle.set(''); this.isModalOpen.set(true); }
@@ -69,7 +106,7 @@ export class DashboardComponent implements OnInit {
     if (field === 'research') this.researchTitle.set(value);
   }
 
-  async createDocument(format: 'doc' | 'pdf') {
+  async createDocument() {
     if (!this.researchTitle().trim()) {
       alert('Пожалуйста, заполните наименование исследовательской работы!');
       return;
@@ -80,43 +117,34 @@ export class DashboardComponent implements OnInit {
     const now = new Date();
     const formattedDate = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-    const htmlTemplate = format === 'doc' 
-      ? this.getWordHtmlTemplate(projectText, titleText)
-      : this.getPdfHtmlTemplate(projectText, titleText);
+    const htmlTemplate = this.getWordHtmlTemplate(projectText, titleText);
 
     const newResearch: Research = {
       title: titleText,
-      fileType: format,
+      fileType: 'doc' as 'doc' | 'pdf', 
       updatedAt: formattedDate,
       project: projectText,
       rawContent: htmlTemplate
     };
 
-try {
-  // ОТПРАВЛЯЕМ В БАЗУ ДАННЫХ FIRESTORE
-  const savedResearch = await this.authService.saveResearchToDb(newResearch);
-
-  // Добавляем в локальный массив для мгновенного отображения на экране
-  this.myResearches.set([savedResearch, ...this.myResearches()]);
-
-  this.closeCreateModal();
-
-  // Шаг 3: Сразу открываем файл в нашем умном редакторе по его ID
-  this.openInRedactor(savedResearch.id);
-
-} catch (error) {
-  alert('Не удалось сохранить файл в облако. Проверьте соединение.');
-  console.error(error);
-}
+    try {
+      const savedResearch = await this.authService.saveResearchToDb(newResearch);
+      this.myResearches.set([savedResearch, ...this.myResearches()]);
+      this.closeCreateModal();
+      this.openInRedactor(savedResearch.id);
+    } catch (error) {
+      alert('Не удалось сохранить файл в облако. Проверьте соединение.');
+      console.error(error);
+    }
   }
 
   openInRedactor(id: string | undefined) {
-  if (!id) {
-    alert('Не удалось открыть документ: отсутствует ID');
-    return;
+    if (!id) {
+      alert('Не удалось открыть документ: отсутствует ID');
+      return;
+    }
+    this.router.navigate(['/redactor', id]);
   }
-  this.router.navigate(['/redactor', id]);
-}
 
   openDocument(item: Research) {
     if (!item.rawContent) return;

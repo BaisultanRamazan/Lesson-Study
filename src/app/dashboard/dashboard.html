@@ -70,7 +70,72 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 15px;
+    position: relative; /* Добавили для правильного расчёта координат меню */
   }
+
+  /* --- СТИЛИ КОНТЕКСТНОГО МЕНЮ И ТРОЕТОЧИЯ --- */
+  .menu-context-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .btn-context-trigger {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    font-weight: bold;
+    color: #ccc;
+    cursor: pointer;
+    padding: 0 8px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .btn-context-trigger:hover {
+    background: #f1f5f9;
+    color: #ff6b5b;
+  }
+
+  .context-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    z-index: 90;
+    min-width: 170px;
+    overflow: hidden;
+    animation: menuFadeIn 0.15s ease-out;
+  }
+
+  .btn-context-delete {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 11px 15px;
+    text-align: left;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #d9381e;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s;
+  }
+
+  .btn-context-delete:hover {
+    background: #fff4f2;
+  }
+
+  @keyframes menuFadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  /* ------------------------------------------- */
 
   .sidebar-panel {
     position: fixed;
@@ -226,23 +291,31 @@
         @for (item of myResearches(); track item.title) {
           <div class="research-item">
             <div style="display: flex; align-items: center; gap: 15px;">
-              @if (item.fileType === 'doc') {
-                <div style="background: #00569d; color: white; padding: 4px 8px; border-radius: 4px; font-weight: 800; font-size: 11px;">W</div>
-              } @else {
-                <div style="background: #d9381e; color: white; padding: 4px 6px; border-radius: 4px; font-weight: 800; font-size: 11px;">PDF</div>
-              }
               
               <span 
-  (click)="openInRedactor(item.id)" 
-  style="color: #ff6b5b; text-decoration: underline; font-size: 16px; font-weight: 600; cursor: pointer;"
->
-  {{ item.title }}
-</span>
+                (click)="openInRedactor(item.id)" 
+                style="color: #ff6b5b; text-decoration: underline; font-size: 16px; font-weight: 600; cursor: pointer;"
+              >
+                {{ item.title }}
+              </span>
             </div>
             
             <div class="research-date-block" style="color: #bbb; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 20px;">
               <span class="divider-pipe">|</span>
-              <span style="color: #999; font-family: monospace;">{{ item.updatedAt }}</span>
+              <span style="color: #999; font-family: monospace; margin-right: 10px;">{{ item.updatedAt }}</span>
+              
+              <div class="menu-context-wrapper">
+                <button class="btn-context-trigger" (click)="toggleMenu($event, item.id)">⋮</button>
+                
+                @if (activeMenuId() === item.id) {
+                  <div class="context-dropdown" (click)="$event.stopPropagation()">
+                    <button class="btn-context-delete" (click)="deleteDocument($event, item.id)">
+                      🗑️ Удалить
+                    </button>
+                  </div>
+                }
+              </div>
+              
             </div>
           </div>
         }
@@ -280,8 +353,9 @@
         </div>
 
         <div style="display: flex; gap: 15px; margin-top: 25px;">
-          <button class="btn-create" style="background: #00569d;" (click)="createDocument('doc')">Создать Word</button>
-          <button class="btn-create" style="background: #d9381e;" (click)="createDocument('pdf')">Создать PDF</button>
+          <button class="btn-create" style="background: #ff6b5b;" (click)="createDocument()">
+            Создать исследование
+          </button>
         </div>
 
         <button (click)="closeCreateModal()" style="background: transparent; border: none; color: #aaa; width: 100%; text-align: center; margin-top: 15px; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: underline;">Отмена</button>

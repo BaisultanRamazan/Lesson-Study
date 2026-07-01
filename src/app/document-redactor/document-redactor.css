@@ -1,10 +1,17 @@
+/* ==========================================================================
+   1. ГЛАВНЫЙ КОНТЕЙНЕР И СЕТКА ПРИЛОЖЕНИЯ
+   ========================================================================== */
 .redactor-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
   background-color: #f4f5f7;
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
+/* Хедер редактора */
 .redactor-header {
   display: flex;
   justify-content: space-between;
@@ -12,6 +19,8 @@
   padding: 10px 25px;
   background: white;
   border-bottom: 1px solid #e1e4e8;
+  height: 60px;
+  box-sizing: border-box;
 }
 
 .btn-back {
@@ -21,73 +30,379 @@
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+  transition: background 0.2s ease;
 }
 
-.doc-info { display: flex; align-items: center; gap: 12px; }
-.doc-badge { background: #fff4f2; color: #ff4a3b; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;}
-.doc-info h2 { margin: 0; font-size: 18px; color: #1e293b; }
-.save-status { font-size: 13px; color: #64748b; }
+.btn-back:hover {
+  background: #e4e6eb;
+}
 
+.doc-info { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+}
+
+.doc-badge { 
+  background: #fff4f2; 
+  color: #ff4a3b; 
+  padding: 3px 8px; 
+  border-radius: 4px; 
+  font-size: 12px; 
+  font-weight: bold;
+}
+
+.doc-info h2 { 
+  margin: 0; 
+  font-size: 18px; 
+  color: #1e293b; 
+}
+
+.save-status { 
+  font-size: 13px; 
+  color: #64748b; 
+}
+
+/* Рабочая область (все, что ниже хедера) */
 .workspace {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
+/* ==========================================================================
+   2. ПАНЕЛЬ ИНСТРУМЕНТОВ ФОРМАТИРОВАНИЯ (STICKY TOOLBAR)
+   ========================================================================== */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  padding: 6px 25px;
+  border-bottom: 1px solid #e1e4e8;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.editor-toolbar button {
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #4a5568;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.editor-toolbar button:hover {
+  background: #f1f5f9;
+  color: #ff4a3b;
+}
+
+.editor-toolbar .separator {
+  width: 1px;
+  height: 20px;
+  background: #e2e8f0;
+  margin: 0 6px;
+}
+
+/* ==========================================================================
+   3. ОБЛАСТЬ ПРОСМОТРА И РЕДАКТИРОВАНИЯ ЛИСТА А4
+   ========================================================================== */
 .document-viewer {
   flex: 1;
   overflow-y: auto;
-  padding: 40px;
+  padding: 40px 20px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f4f5f7;
 }
 
 .a4-sheet {
   width: 210mm;
-  min-height: 297mm;
+  height: 297mm; /* Заменяем min-height на жесткую height */
+  max-height: 297mm;
   background: white;
   padding: 30mm 20mm;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border-radius: 2px;
   outline: none;
-  font-family: 'Arial', sans-serif;
-  font-size: 15px;
-  line-height: 1.6;
-  color: #333;
+  box-sizing: border-box;
+  overflow-y: auto; /* Если контент заполнит страницу, внутри листа появится аккуратный внутренний скролл */
 }
 
+.page-indicator {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 10px;
+  font-weight: 500;
+  background: #e2e8f0;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.page-navigator {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: white;
+  padding: 10px 20px;
+  border-radius: 30px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  margin-top: 15px;
+}
+
+.page-navigator button {
+  background: #f1f5f9;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  transition: background 0.2s;
+}
+
+.page-navigator button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-navigator button:not(:disabled):hover {
+  background: #e2e8f0;
+}
+
+/* Горизонтальный мини-скролл страниц */
+.page-scroll-list {
+  display: flex;
+  gap: 6px;
+  max-width: 200px;
+  overflow-x: auto;
+  padding: 4px;
+}
+
+.page-scroll-list span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  font-size: 11px;
+  font-weight: bold;
+  color: #64748b;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.page-scroll-list span:hover {
+  background: #e2e8f0;
+  transform: scale(1.1);
+}
+
+/* Активная страница */
+.page-scroll-list .active-page-dot {
+  background: #ff4a3b;
+  color: white;
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(255, 74, 59, 0.4);
+}
+
+.a4-sheet:focus {
+  box-shadow: 0 6px 25px rgba(255, 74, 59, 0.15);
+}
+
+/* Стилизация элементов, которые генерирует ИИ внутрь листа */
+.a4-sheet table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 15px 0;
+}
+
+.a4-sheet th, .a4-sheet td {
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+}
+
+/* ==========================================================================
+   4. БОКОВАЯ ПАНЕЛЬ (АНАЛИТИКА + ЧАТ ИИ + ЭКСПОРТ)
+   ========================================================================== */
 .ai-sidebar {
   width: 380px;
   background: white;
   border-left: 1px solid #e1e4e8;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
+/* Блок живой аналитики */
 .live-stats {
   padding: 20px;
   border-bottom: 1px solid #f0f2f5;
+  background: white;
 }
-.live-stats h3 { margin: 0 0 12px 0; font-size: 14px; color: #64748b; text-transform: uppercase; }
-.stats-grid { display: flex; gap: 10px; }
-.stat-card { flex: 1; background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }
-.stat-card strong { display: block; font-size: 18px; color: #1e293b; }
-.stat-card span { font-size: 11px; color: #94a3b8; }
 
-.chat-container { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-.chat-header { display: flex; align-items: center; gap: 12px; padding: 15px 20px; background: #fafbfe; border-bottom: 1px solid #f0f2f5; }
-.agent-avatar { width: 35px; height: 35px; background: #ff4a3b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-.chat-header h4 { margin: 0; font-size: 14px; }
-.status-online { font-size: 11px; color: #10b981; }
+.live-stats h3 { 
+  margin: 0 0 12px 0; 
+  font-size: 13px; 
+  color: #64748b; 
+  text-transform: uppercase; 
+  letter-spacing: 0.5px;
+}
 
-.chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: #f8fafc; }
-.msg-row { display: flex; }
-.user-row { justify-content: flex-end; }
-.ai-row { justify-content: flex-start; }
-.msg-bubble { max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 13.5px; line-height: 1.4; }
-.user-row .msg-bubble { background: #ff4a3b; color: white; border-bottom-right-radius: 2px; }
-.ai-row .msg-bubble { background: white; color: #334155; border-bottom-left-radius: 2px; border: 1px solid #e2e8f0; }
+.stats-grid { 
+  display: flex; 
+  gap: 10px; 
+}
 
-.chat-footer { padding: 15px; display: flex; gap: 8px; background: white; border-top: 1px solid #e1e4e8; }
-.chat-footer input { flex: 1; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; outline: none; font-size: 13px; }
-.chat-footer button { background: #1e293b; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+.stat-card { 
+  flex: 1; 
+  background: #f8fafc; 
+  padding: 10px; 
+  border-radius: 8px; 
+  text-align: center; 
+  border: 1px solid #e2e8f0; 
+}
+
+.stat-card strong { 
+  display: block; 
+  font-size: 18px; 
+  color: #1e293b; 
+}
+
+.stat-card span { 
+  font-size: 11px; 
+  color: #94a3b8; 
+}
+
+/* Окно чата с ИИ */
+.chat-container { 
+  display: flex; 
+  flex-direction: column; 
+  flex: 1; 
+  overflow: hidden; 
+}
+
+.chat-header { 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  padding: 15px 20px; 
+  background: #fafbfe; 
+  border-bottom: 1px solid #f0f2f5; 
+}
+
+.agent-avatar { 
+  width: 35px; 
+  height: 35px; 
+  background: #ff4a3b; 
+  color: white; 
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  font-weight: bold; 
+}
+
+.chat-header h4 { 
+  margin: 0; 
+  font-size: 14px; 
+  color: #1e293b;
+}
+
+.status-online { 
+  font-size: 11px; 
+  color: #10b981; 
+}
+
+/* Лента сообщений чата */
+.chat-messages { 
+  flex: 1; 
+  overflow-y: auto; 
+  padding: 20px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 15px; 
+  background: #f8fafc; 
+}
+
+.msg-row { 
+  display: flex; 
+}
+
+.user-row { 
+  justify-content: flex-end; 
+}
+
+.ai-row { 
+  justify-content: flex-start; 
+}
+
+.msg-bubble { 
+  max-width: 85%; 
+  padding: 12px 16px; 
+  border-radius: 12px; 
+  font-size: 13.5px; 
+  line-height: 1.45; 
+}
+
+.user-row .msg-bubble { 
+  background: #ff4a3b; 
+  color: white; 
+  border-bottom-right-radius: 2px; 
+}
+
+.ai-row .msg-bubble { 
+  background: white; 
+  color: #334155; 
+  border-bottom-left-radius: 2px; 
+  border: 1px solid #e2e8f0; 
+}
+
+/* Футер чата (Ввод текста) */
+.chat-footer { 
+  padding: 15px; 
+  display: flex; 
+  gap: 8px; 
+  background: white; 
+  border-top: 1px solid #e1e4e8; 
+}
+
+.chat-footer input { 
+  flex: 1; 
+  border: 1px solid #cbd5e1; 
+  padding: 10px 12px; 
+  border-radius: 6px; 
+  outline: none; 
+  font-size: 13px; 
+  transition: border-color 0.2s ease;
+}
+
+.chat-footer input:focus {
+  border-color: #ff4a3b;
+}
+
+.chat-footer button { 
+  background: #1e293b; 
+  color: white; 
+  border: none; 
+  padding: 0 18px; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  font-size: 13px; 
+  font-weight: 500; 
+  transition: background 0.2s ease;
+}
+
+.chat-footer button:hover {
+  background: #0f172a;
+}
