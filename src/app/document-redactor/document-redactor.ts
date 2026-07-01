@@ -323,15 +323,19 @@ export class DocumentRedactorComponent implements OnInit {
       const blob = new Blob([blobContent], { type: 'application/msword' });
       this.triggerDownload(blob, `${titleText}.doc`);
     } else {
-      // Для PDF берем склеенный контент всех страниц
-      const currentHtml = this.documentContent();
+let currentHtml = this.documentContent();
 
-      // Оборачиваем в чистый печатный PDF-шаблон
+      // Жестко раскодируем амперсанды, если они случайно проскочили перед генерацией PDF
+      if (currentHtml.includes('&lt;') || currentHtml.includes('&gt;')) {
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.innerHTML = currentHtml;
+        currentHtml = tempTextArea.value;
+      }
+
+      // Оборачиваем в печатный PDF-шаблон
       const finalHtml = this.wrapInPdfTemplate(titleText, currentHtml);
       
-      // КРИТИЧЕСКИ ВАЖНО: Используем 'text/html', чтобы браузер рендерил элементы, а не выводил код текстом
       const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
-      
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
     }
