@@ -6,6 +6,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { AuthService } from '../auth'; 
 import { firstValueFrom } from 'rxjs';
 import { DomSanitizer } from '@angular/platform-browser';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 interface Message {
   sender: 'user' | 'ai';
@@ -66,7 +67,7 @@ export class DocumentRedactorComponent implements OnInit {
     return { pages: pageCount, words: wordCount, chars: charCount };
   });
 
-  async ngOnInit() {
+  ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       alert('Документ не найден!');
@@ -74,9 +75,20 @@ export class DocumentRedactorComponent implements OnInit {
       return;
     }
     this.researchId.set(id);
-    await this.loadDocument();
-  }
 
+    // ЖЕЛЕЗНАЯ ПРОВЕРКА СЕССИИ ПЕРЕД ЗАГРУЗКОЙ:
+    const auth = getAuth();
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Загружаем документ только тогда, когда Firebase на 100% подтвердил юзера
+        await this.loadDocument();
+      } else {
+        // Если юзер реально разлогинился — отправляем на логин, но БЕЗ сохранения мусора
+        this.isDocumentLoading = true; // Выставляем флаг блокировки
+        this.router.navigate(['/login']);
+      }
+    });
+  }
   async loadDocument() {
     try {
       this.isDocumentLoading = true; // СРАЗУ блокируем авто-сохранение
@@ -170,22 +182,27 @@ export class DocumentRedactorComponent implements OnInit {
   }
 
   async saveDocument() {
+    // ЗАЩИТА 1: Если идет загрузка документа — не сохраняем
     if (this.isDocumentLoading) return; 
+    
+    // ЗАЩИТА 2: Если массив страниц пустой или сломался в процессе рендера/деструкции — ЖЕСТКО БЛОКИРУЕМ
+    if (!this.documentPages() || this.documentPages().length === 0) {
+      console.warn('Попытка сохранить пустой массив страниц заблокирована.');
+      return;
+    }
+
     if (!this.researchId()) return;
     
     this.isSaving.set(true);
     try {
-      // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Перед склейкой убираем из массива страниц фантомные пустые строки
-      // Оставляем только те страницы, где есть хоть какой-то текст или теги
+      // Вычищаем страницы от пробелов
       const cleanPages = this.documentPages()
         .map(p => p.trim())
         .filter(p => p !== '' && p !== '<p><br></p>' && p !== '<div><br></div>');
 
-      // Если после чистки вообще ничего не осталось, принудительно делаем одну чистую страницу
+      // ЗАЩИТА 3: Если после чистки страниц не осталось (например, стерли всё), 
+      // сохраняем строго ОДНУ пустую страницу, но не даем плодить разделители!
       const finalPages = cleanPages.length > 0 ? cleanPages : ['<p><br></p>'];
-
-      // Обновляем локальный сигнал отфильтрованными данными, чтобы интерфейс не прыгал
-      this.documentPages.set(finalPages);
 
       // Склеиваем чистые страницы
       const fullContent = finalPages.join('');
