@@ -492,12 +492,21 @@
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
-    height: auto !important;
+    
+    /* ИСПРАВЛЕНИЕ: Задаем минимальную высоту, чтобы пустой лист держал форму А4 */
+    /* Вычисляем высоту как 141.4% от текущей ширины экрана смартфона */
+    min-height: calc((100vw - 20px) * 1.414) !important; 
+    
+    height: auto !important; /* Позволяет листу расти дальше вниз, если текста станет очень много */
     max-height: none !important;
-    padding: 20px 15px !important;
+    padding: 20px 15px !important; 
     font-size: 14px;
-    box-shadow: none; /* Убираем тяжелые тени на мобилке */
-    border-radius: 0;
+    box-shadow: none; 
+    border-radius: 4px; /* Оставим легкое скругление для красоты, чтобы это выглядело как документ */
+    
+    /* Защита от вылета длинного текста за края экрана */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
 
   /* ТРАНСФОРМАЦИЯ БОКОВОЙ ПАНЕЛИ В ВЫЕЗЖАЮЩУЮ ШТОРКУ */
