@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject, computed, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject, computed, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -21,7 +21,7 @@ interface Message {
   templateUrl: './document-redactor.html',
   styleUrls: ['./document-redactor.css']
 })
-export class DocumentRedactorComponent implements OnInit {
+export class DocumentRedactorComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private authService = inject(AuthService);
@@ -35,27 +35,23 @@ export class DocumentRedactorComponent implements OnInit {
   researchId = signal<string | null>(null);
   researchTitle = signal<string>('Загрузка документа...');
   
-  // Храним контент постранично в виде массива строк HTML
   documentPages = signal<string[]>(['']); 
-  currentPageIndex = signal<number>(0); // Индекс текущей активной страницы (с 0)
+  currentPageIndex = signal<number>(0); 
 
   isSaving = signal<boolean>(false);
   isAiThinking = signal<boolean>(false); 
   isDocumentLoading = false;
+  private saveTimeout: any = null;
 
-  // ДОБАВЛЕНО: Сигнал и метод управления шторкой для мобильных устройств
+  // Сигнал управления шторкой для мобильных устройств
   isMobileAiOpen = signal<boolean>(false);
-
-  toggleMobileAi() {
-    this.isMobileAiOpen.set(!this.isMobileAiOpen());
-  }
 
   chatInput = signal<string>('');
   messages = signal<Message[]>([
     { sender: 'ai', text: 'Привет! Я твой ИИ-ассистент. Напиши мне, что добавить в текст, или попроси проанализировать твое исследование.', timestamp: new Date() }
   ]);
 
-  // Генерируем общий контент для аналитики и экспорта (склеиваем все страницы)
+  // Генерируем общий контент для аналитики и экспорта
   documentContent = computed(() => this.documentPages().join(''));
 
   stats = computed(() => {
@@ -67,6 +63,7 @@ export class DocumentRedactorComponent implements OnInit {
     return { pages: pageCount, words: wordCount, chars: charCount };
   });
 
+  // Инициализация компонента
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -76,22 +73,42 @@ export class DocumentRedactorComponent implements OnInit {
     }
     this.researchId.set(id);
 
-    // ЖЕЛЕЗНАЯ ПРОВЕРКА СЕССИИ ПЕРЕД ЗАГРУЗКОЙ:
     const auth = getAuth();
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Загружаем документ только тогда, когда Firebase на 100% подтвердил юзера
         await this.loadDocument();
       } else {
-        // Если юзер реально разлогинился — отправляем на логин, но БЕЗ сохранения мусора
-        this.isDocumentLoading = true; // Выставляем флаг блокировки
+        this.isDocumentLoading = true; 
         this.router.navigate(['/login']);
       }
     });
   }
+
+  // Хук уничтожения компонента (Защита от сохранения мусора при выходе)
+  ngOnDestroy() {
+    this.isDocumentLoading = true; 
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      console.log('Фоновый таймер сохранения успешно уничтожен при выходе.');
+    }
+  }
+
+  // Возврат на дашборд
+  goBack() { 
+    this.isDocumentLoading = true; 
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+    this.router.navigate(['/dashboard']); 
+  }
+
+  toggleMobileAi() {
+    this.isMobileAiOpen.set(!this.isMobileAiOpen());
+  }
+
   async loadDocument() {
     try {
-      this.isDocumentLoading = true; // СРАЗУ блокируем авто-сохранение
+      this.isDocumentLoading = true; 
 
       const allResearches = await this.authService.getResearches();
       const currentDoc = allResearches.find(r => r.id === this.researchId());
@@ -100,7 +117,6 @@ export class DocumentRedactorComponent implements OnInit {
         this.researchTitle.set(currentDoc.title);
         let rawContent = (currentDoc.rawContent || '').trim();
 
-        // Декодируем строку из базы, если браузер заэкранировал теги
         if (rawContent.includes('&lt;') || rawContent.includes('&gt;')) {
           const decoderNode = document.createElement('textarea');
           decoderNode.innerHTML = rawContent;
@@ -119,13 +135,7 @@ export class DocumentRedactorComponent implements OnInit {
         } else if (!rawContent || rawContent === '<p><br></p>' || rawContent === '<div><br></div>') {
           pages = ['<p><br></p>'];
         } else if (rawContent.includes('')) {
-          // ИСПРАВЛЕНИЕ: Жестко вычищаем пустые страницы, которые могли нагенерироваться раньше
-          pages = rawContent
-            .split('')
-            .map(p => p.trim())
-            .filter(p => p.length > 0 && p !== '<p><br></p>' && p !== '<div><br></div>');
-          
-          // Если все страницы отфильтровались как пустые, оставляем строго ОДНУ
+          pages = rawContent.split('').map(p => p.trim()).filter(p => p.length > 0);
           if (pages.length === 0) pages = ['<p><br></p>'];
         } else {
           pages = [rawContent];
@@ -134,15 +144,12 @@ export class DocumentRedactorComponent implements OnInit {
         this.documentPages.set(pages);
         this.currentPageIndex.set(0);
 
-        // Рендерим текущую страницу И только после этого снимаем блокировку
         if (this.subSheet) {
           this.subSheet.nativeElement.innerHTML = pages[0] || '<p><br></p>';
         }
 
-        // Даем браузеру 100мс, чтобы "переварить" вставленный HTML, и только потом разрешаем сохранять
         setTimeout(() => {
           this.isDocumentLoading = false; 
-          console.log('Документ полностью загружен. Автосохранение разблокировано.');
         }, 100);
 
       } else {
@@ -156,55 +163,36 @@ export class DocumentRedactorComponent implements OnInit {
     }
   }
 
-  private saveTimeout: any = null;
-
- onContentChange(event: Event) {
-    // 1. ЕСЛИ ДОКУМЕНТ ЕЩЕ ЗАГРУЖАЕТСЯ — СРАЗУ ВЫХОДИМ И НИЧЕГО НЕ ПЕРЕЗАПИСЫВАЕМ
+  onContentChange(event: Event) {
     if (this.isDocumentLoading) return;
 
-    // 2. Берем измененный HTML из листа А4
     const html = (event.target as HTMLElement).innerHTML;
     
-    // 3. Обновляем контент только ТЕКУЩЕЙ страницы в массиве сигналов
     const pages = [...this.documentPages()];
     pages[this.currentPageIndex()] = html;
     this.documentPages.set(pages);
     
-    // 4. Сбрасываем предыдущий таймер автосохранения (Дебаунс)
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
     }
 
-    // 5. Запускаем новый таймер: сохраняем в базу через 1.5 секунды после затишья в печати
     this.saveTimeout = setTimeout(() => {
       this.saveDocument();
     }, 1500);
   }
 
   async saveDocument() {
-    // ЗАЩИТА 1: Если идет загрузка документа — не сохраняем
     if (this.isDocumentLoading) return; 
-    
-    // ЗАЩИТА 2: Если массив страниц пустой или сломался в процессе рендера/деструкции — ЖЕСТКО БЛОКИРУЕМ
-    if (!this.documentPages() || this.documentPages().length === 0) {
-      console.warn('Попытка сохранить пустой массив страниц заблокирована.');
-      return;
-    }
-
-    if (!this.researchId()) return;
+    if (!this.researchId() || this.researchId() === null) return;
+    if (!this.documentPages() || this.documentPages().length === 0) return;
     
     this.isSaving.set(true);
     try {
-      // Вычищаем страницы от пробелов
       const cleanPages = this.documentPages()
         .map(p => p.trim())
         .filter(p => p !== '' && p !== '<p><br></p>' && p !== '<div><br></div>');
 
-      // ЗАЩИТА 3: Если после чистки страниц не осталось (например, стерли всё), 
-      // сохраняем строго ОДНУ пустую страницу, но не даем плодить разделители!
       const finalPages = cleanPages.length > 0 ? cleanPages : ['<p><br></p>'];
-
-      // Склеиваем чистые страницы
       const fullContent = finalPages.join('');
       
       await this.authService.updateResearchContent(this.researchId()!, fullContent);
@@ -226,8 +214,6 @@ export class DocumentRedactorComponent implements OnInit {
       this.saveDocument();
     }
   }
-
-  // --- МЕТОДЫ УПРАВЛЕНИЯ ПОСТРАНИЧНОЙ НАВИГАЦИЕЙ ---
   
   goToPage(index: number) {
     if (index < 0 || index >= this.documentPages().length) return;
@@ -368,7 +354,6 @@ export class DocumentRedactorComponent implements OnInit {
       }
 
       const finalHtml = this.wrapInPdfTemplate(titleText, currentHtml);
-      
       const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -411,19 +396,11 @@ export class DocumentRedactorComponent implements OnInit {
         <meta charset="utf-8">
         <title>${title}</title>
         <style>
-          body { 
-            font-family: 'Arial', sans-serif; 
-            padding: 50px; 
-            color: #333; 
-            line-height: 1.6; 
-            background: white;
-          }
+          body { font-family: 'Arial', sans-serif; padding: 50px; color: #333; line-height: 1.6; background: white; }
           table { border-collapse: collapse; width: 100%; margin: 15px 0; }
           th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
           th { background-color: #f8fafc; }
-          @media print {
-            body { padding: 0; }
-          }
+          @media print { body { padding: 0; } }
         </style>
       </head>
       <body>
@@ -443,6 +420,4 @@ export class DocumentRedactorComponent implements OnInit {
     tmp.innerHTML = html;
     return tmp.textContent || tmp.innerText || '';
   }
-
-  goBack() { this.router.navigate(['/dashboard']); }
 }
