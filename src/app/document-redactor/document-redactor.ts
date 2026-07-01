@@ -79,7 +79,7 @@ export class DocumentRedactorComponent implements OnInit {
 
   async loadDocument() {
     try {
-      this.isDocumentLoading = true; // Блокируем авто-сохранение на время разбора данных
+      this.isDocumentLoading = true; // СРАЗУ блокируем авто-сохранение
 
       const allResearches = await this.authService.getResearches();
       const currentDoc = allResearches.find(r => r.id === this.researchId());
@@ -97,7 +97,6 @@ export class DocumentRedactorComponent implements OnInit {
 
         let pages: string[] = [];
 
-        // Извлекаем чистый текст, если это шаблон разметки от старого экспорта
         if (rawContent.includes('<html') || rawContent.includes('xmlns:w=')) {
           const bodyMatch = rawContent.match(/<body>([\s\S]*?)<\/body>/i);
           if (bodyMatch && bodyMatch[1].trim()) {
@@ -108,7 +107,6 @@ export class DocumentRedactorComponent implements OnInit {
         } else if (!rawContent || rawContent === '<p><br></p>' || rawContent === '<div><br></div>') {
           pages = ['<p><br></p>'];
         } else if (rawContent.includes('')) {
-          // ИСПРАВЛЕНО: Вернули маркер на место
           pages = rawContent.split('').map(p => p.trim()).filter(p => p.length > 0);
           if (pages.length === 0) pages = ['<p><br></p>'];
         } else {
@@ -118,13 +116,16 @@ export class DocumentRedactorComponent implements OnInit {
         this.documentPages.set(pages);
         this.currentPageIndex.set(0);
 
-        // Рендерим текущую страницу
+        // Рендерим текущую страницу И только после этого снимаем блокировку
+        if (this.subSheet) {
+          this.subSheet.nativeElement.innerHTML = pages[0] || '<p><br></p>';
+        }
+
+        // Даем браузеру 100мс, чтобы "переварить" вставленный HTML, и только потом разрешаем сохранять
         setTimeout(() => {
-          if (this.subSheet) {
-            this.subSheet.nativeElement.innerHTML = pages[0] || '<p><br></p>';
-          }
           this.isDocumentLoading = false; 
-        }, 50);
+          console.log('Документ полностью загружен. Автосохранение разблокировано.');
+        }, 100);
 
       } else {
         alert('Документ не найден.');
@@ -139,17 +140,24 @@ export class DocumentRedactorComponent implements OnInit {
 
   private saveTimeout: any = null;
 
-  onContentChange(event: Event) {
+ onContentChange(event: Event) {
+    // 1. ЕСЛИ ДОКУМЕНТ ЕЩЕ ЗАГРУЖАЕТСЯ — СРАЗУ ВЫХОДИМ И НИЧЕГО НЕ ПЕРЕЗАПИСЫВАЕМ
+    if (this.isDocumentLoading) return;
+
+    // 2. Берем измененный HTML из листа А4
     const html = (event.target as HTMLElement).innerHTML;
     
+    // 3. Обновляем контент только ТЕКУЩЕЙ страницы в массиве сигналов
     const pages = [...this.documentPages()];
     pages[this.currentPageIndex()] = html;
     this.documentPages.set(pages);
     
+    // 4. Сбрасываем предыдущий таймер автосохранения (Дебаунс)
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
     }
 
+    // 5. Запускаем новый таймер: сохраняем в базу через 1.5 секунды после затишья в печати
     this.saveTimeout = setTimeout(() => {
       this.saveDocument();
     }, 1500);
